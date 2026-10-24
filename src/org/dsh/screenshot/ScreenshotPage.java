@@ -8,24 +8,24 @@ package org.dsh.screenshot;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseButton;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.jackhuang.hmcl.game.HMCLGameRepository;
+import org.jackhuang.hmcl.ui.Controllers;
 import org.jackhuang.hmcl.ui.FXUtils;
 import org.jackhuang.hmcl.ui.SVG;
-import org.jackhuang.hmcl.ui.construct.ComponentList;
-import org.jackhuang.hmcl.ui.construct.LineButton;
+import org.jackhuang.hmcl.ui.construct.MessageDialogPane;
 
-import java.awt.Desktop;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,27 +34,17 @@ import java.util.Locale;
 
 /// The screenshot browser shown as a tab inside the instance page.
 ///
-/// <p>Built from the launcher's own components — [ComponentList] sections and [LineButton] rows —
-/// so it matches the surrounding instance pages instead of looking like a foreign window. Each
-/// capture is a row with a preview thumbnail, the file name and its size; clicking a row opens the
-/// original in the system image viewer.</p>
-///
-/// <p>Implements the launcher's `GameInstanceLoadable` hook, so the page reloads by itself when the
-/// user switches instances.</p>
+/// <p>Captures are square tiles: the picture fills a fixed box and a "⋮" button in its lower-left
+/// corner opens a menu with the per-file actions. The page scrolls as a whole, so the grid is
+/// never clipped and no separate scroller competes with it.</p>
 final class ScreenshotPage extends VBox
         implements org.jackhuang.hmcl.ui.versions.VersionPage.GameInstanceLoadable {
 
-    /// Thumbnail edge length used inside a row preview.
-    private static final double THUMBNAIL_SIZE = 44;
+    /// Tile edge length in pixels.
+    private static final double TILE_SIZE = 168;
 
-    /// Larger preview edge length in the page header.
-    private static final double PREVIEW_SIZE = 168;
-
-    private final ComponentList overview = new ComponentList();
-    private final ComponentList captures = new ComponentList();
+    private final FlowPane grid = new FlowPane(12, 12);
     private final Label summary = new Label();
-    private final Label emptyHint = new Label();
-    private final ImageView preview = new ImageView();
 
     /// Every screenshot found for the instance.
     private final List<Path> screenshots = new ArrayList<>();
@@ -64,13 +54,10 @@ final class ScreenshotPage extends VBox
 
     ScreenshotPage() {
         getStyleClass().add("screenshot-page");
-        setSpacing(12);
-        setPadding(new Insets(12, 16, 16, 16));
+        setSpacing(0);
 
-        getChildren().addAll(buildHeader(), buildScrollArea());
+        getChildren().addAll(buildToolbar(), buildScrollArea());
     }
-
-    // ---------------------------------------------------------------- launcher hook
 
     @Override
     public void loadInstance(HMCLGameRepository repository, String version) {
@@ -81,68 +68,40 @@ final class ScreenshotPage extends VBox
 
     // -------------------------------------------------------------------- layout
 
-    /// Builds the page header: title, summary and an actions row.
+    /// Builds the toolbar: two action buttons and the counts on the right.
     ///
-    /// @return the header node
-    private Node buildHeader() {
-        Label title = new Label("截图");
-        title.getStyleClass().add("screenshot-title");
+    /// <p>Plain buttons, not navigation rows: these run an action, so the launcher's trailing
+    /// chevron would wrongly imply a page transition.</p>
+    ///
+    /// @return the toolbar
+    private Node buildToolbar() {
+        StackPane refresh = actionButton("刷新", SVG.REFRESH, this::reload);
+        StackPane openFolder = actionButton("打开截图目录", SVG.FOLDER_OPEN, this::openDirectory);
 
         summary.getStyleClass().add("screenshot-summary");
 
-        VBox texts = new VBox(4, title, summary);
-
-        LineButton refresh = LineButton.createNavigationButton();
-        refresh.setTitle("刷新");
-        refresh.setLeading(SVG.REFRESH);
-        refresh.setOnAction(event -> reload());
-
-        LineButton openFolder = LineButton.createNavigationButton();
-        openFolder.setTitle("打开截图目录");
-        openFolder.setLeading(SVG.FOLDER_OPEN);
-        openFolder.setOnAction(event -> openDirectory());
-
         HBox actions = new HBox(8, refresh, openFolder);
-        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setAlignment(Pos.CENTER_LEFT);
 
-        HBox row = new HBox(12, texts, spacer(), actions);
+        HBox row = new HBox(12, actions, spacer(), summary);
         row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("screenshot-toolbar");
         return row;
     }
 
-    /// Builds the scrollable body: a preview pane plus the capture list.
+    /// Builds the scrollable tile area.
     ///
     /// @return the scroll pane
     private Node buildScrollArea() {
-        preview.setFitWidth(PREVIEW_SIZE);
-        preview.setFitHeight(PREVIEW_SIZE);
-        preview.setPreserveRatio(true);
-        preview.setSmooth(true);
+        grid.setAlignment(Pos.TOP_LEFT);
+        grid.setPadding(new Insets(14));
 
-        StackPane previewFrame = new StackPane(preview);
-        previewFrame.getStyleClass().add("screenshot-preview");
-        previewFrame.setPrefSize(PREVIEW_SIZE, PREVIEW_SIZE);
-        previewFrame.setMinSize(PREVIEW_SIZE, PREVIEW_SIZE);
-        previewFrame.setMaxSize(PREVIEW_SIZE, PREVIEW_SIZE);
-
-        emptyHint.getStyleClass().add("screenshot-hint");
-        emptyHint.setWrapText(true);
-
-        VBox side = new VBox(8, previewFrame, emptyHint);
-        side.setAlignment(Pos.TOP_LEFT);
-        side.setPrefWidth(PREVIEW_SIZE);
-
-        VBox content = new VBox(12, overview, captures);
-        content.setFillWidth(true);
-        content.setPadding(new Insets(0, 4, 8, 0));
-
-        ScrollPane scroll = new ScrollPane(content);
+        ScrollPane scroll = new ScrollPane(grid);
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.getStyleClass().add("screenshot-scroll");
         FXUtils.smoothScrolling(scroll);
         VBox.setVgrow(scroll, Priority.ALWAYS);
-
         return scroll;
     }
 
@@ -151,12 +110,10 @@ final class ScreenshotPage extends VBox
     /// Re-reads the screenshots from disk.
     void reload() {
         screenshots.clear();
-        captures.getContent().clear();
-        preview.setImage(null);
+        grid.getChildren().clear();
 
         if (repository == null || version == null || version.isBlank()) {
             summary.setText("未选择实例");
-            emptyHint.setText("打开一个实例后即可查看它的截图。");
             return;
         }
 
@@ -164,89 +121,84 @@ final class ScreenshotPage extends VBox
         screenshots.addAll(ScreenshotLocator.collect(directories));
 
         summary.setText(screenshots.isEmpty()
-                ? "「" + version + "」还没有截图"
-                : "「" + version + "」共 " + screenshots.size() + " 张截图");
-
-        if (screenshots.isEmpty()) {
-            emptyHint.setText("截图为空。游戏内按 F2 截图后点「刷新」即可显示。");
-            return;
-        }
-
-        emptyHint.setText("点击任意一行用系统看图器打开；这里显示的是最近一张。");
-        showPreview(screenshots.get(0));
+                ? "「" + version + "」没有截图"
+                : "「" + version + "」共 " + screenshots.size() + " 张");
 
         for (Path screenshot : screenshots)
-            captures.getContent().add(buildRow(screenshot));
+            grid.getChildren().add(buildTile(screenshot));
+
+        if (screenshots.isEmpty()) {
+            Label empty = new Label("游戏内按 F2 截图后点「刷新」即可显示。");
+            empty.getStyleClass().add("screenshot-hint");
+            grid.getChildren().add(empty);
+        }
     }
 
-    /// Shows one capture in the header preview pane.
+    // --------------------------------------------------------------------- tiles
+
+    /// Builds one square tile for a capture.
     ///
     /// @param screenshot the image file
-    private void showPreview(Path screenshot) {
+    /// @return the tile
+    private Node buildTile(Path screenshot) {
+        ImageView view = new ImageView();
         try {
-            preview.setImage(new Image(screenshot.toUri().toString(),
-                    PREVIEW_SIZE, PREVIEW_SIZE, true, true, false));
+            // Decoded straight at tile size: full-resolution captures would waste memory here.
+            view.setImage(new Image(screenshot.toUri().toString(),
+                    TILE_SIZE, TILE_SIZE, true, true, false));
         } catch (Throwable ignored) {
-            // A broken image simply leaves the pane empty.
+            // A broken image leaves an empty box rather than failing the page.
         }
+        view.setFitWidth(TILE_SIZE);
+        view.setFitHeight(TILE_SIZE);
+        view.setPreserveRatio(true);
+        view.setSmooth(true);
+
+        StackPane frame = new StackPane(view);
+        frame.getStyleClass().add("screenshot-tile");
+        frame.setPrefSize(TILE_SIZE, TILE_SIZE);
+        frame.setMinSize(TILE_SIZE, TILE_SIZE);
+        frame.setMaxSize(TILE_SIZE, TILE_SIZE);
+        frame.setOnMouseClicked(event -> ScreenshotPreview.show(screenshot));
+
+        Node options = optionsButton(screenshot);
+        StackPane.setAlignment(options, Pos.BOTTOM_LEFT);
+        StackPane.setMargin(options, new Insets(0, 0, 7, 7));
+
+        StackPane tile = new StackPane(frame, options);
+        tile.setPrefSize(TILE_SIZE, TILE_SIZE);
+        tile.setMinSize(TILE_SIZE, TILE_SIZE);
+        tile.setMaxSize(TILE_SIZE, TILE_SIZE);
+        return tile;
     }
 
-    // --------------------------------------------------------------------- rows
-
-    /// Builds one capture row in the launcher's native line style.
+    /// Builds the "⋮" button and the menu it opens.
     ///
     /// @param screenshot the image file
-    /// @return the row
-    private Node buildRow(Path screenshot) {
-        LineButton row = LineButton.createNavigationButton();
-        row.setTitle(screenshot.getFileName().toString());
-        row.setSubtitle(formatSize(screenshot) + " · " + screenshot.getParent());
-        row.setLeading(thumbnail(screenshot));
+    /// @return the button
+    private Node optionsButton(Path screenshot) {
+        StackPane button = new StackPane(SVG.MORE_VERT.createIcon());
+        button.getStyleClass().add("screenshot-options");
+        button.setPickOnBounds(true);
 
-        row.setOnAction(event -> openImage(screenshot));
-        row.setOnMouseEntered(event -> showPreview(screenshot));
-        return row;
-    }
+        ContextMenu menu = new ContextMenu();
 
-    /// Builds a small preview image for a row icon.
-    ///
-    /// @param screenshot the image file
-    /// @return the icon node
-    private static Node thumbnail(Path screenshot) {
-        try {
-            Image image = new Image(screenshot.toUri().toString(),
-                    THUMBNAIL_SIZE, THUMBNAIL_SIZE, true, true, false);
-            ImageView view = new ImageView(image);
-            view.setFitWidth(THUMBNAIL_SIZE - 8);
-            view.setFitHeight(THUMBNAIL_SIZE - 8);
-            view.setPreserveRatio(true);
-            view.setSmooth(true);
+        MenuItem open = new MenuItem("用图片管理器打开");
+        open.setOnAction(event -> openImage(screenshot));
 
-            StackPane frame = new StackPane(view);
-            frame.setPrefSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
-            frame.setMinSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
-            frame.setMaxSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
-            return frame;
-        } catch (Throwable e) {
-            return SVG.SCREENSHOT_MONITOR.createIcon();
-        }
-    }
+        MenuItem rename = new MenuItem("重命名");
+        rename.setOnAction(event -> rename(screenshot));
 
-    /// Formats a file size for the row subtitle.
-    ///
-    /// @param file the file
-    /// @return the formatted size
-    private static String formatSize(Path file) {
-        try {
-            long bytes = Files.size(file);
-            if (bytes < 1024)
-                return bytes + " B";
-            if (bytes < 1024 * 1024)
-                return String.format(Locale.ROOT, "%.0f KB", bytes / 1024.0);
-            return String.format(Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024.0));
-        } catch (IOException e) {
-            return "?";
-        }
+        MenuItem delete = new MenuItem("删除");
+        delete.setOnAction(event -> delete(screenshot));
+
+        menu.getItems().addAll(open, rename, delete);
+
+        button.setOnMouseClicked(event -> {
+            menu.show(button, event.getScreenX(), event.getScreenY());
+            event.consume();
+        });
+        return button;
     }
 
     // ------------------------------------------------------------------ actions
@@ -255,21 +207,110 @@ final class ScreenshotPage extends VBox
     ///
     /// @param screenshot the image file
     private void openImage(Path screenshot) {
-        showPreview(screenshot);
         try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(screenshot.toFile());
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().open(screenshot.toFile());
                 return;
             }
-        } catch (IOException | UnsupportedOperationException ignored) {
-            // Fall back to revealing the folder below.
+        } catch (Throwable ignored) {
+            // Fall back to revealing the folder.
         }
-
         try {
             FXUtils.openFolder(screenshot.getParent());
         } catch (Throwable ignored) {
             // Nothing else to try.
         }
+    }
+
+    /// Renames a capture, preserving its extension.
+    ///
+    /// <p>A small dialog is built by hand instead of using `InputDialogPane`, because that class
+    /// cannot pre-fill the current name — and renaming should start from the existing name rather
+    /// than an empty box.</p>
+    ///
+    /// @param screenshot the image file
+    private void rename(Path screenshot) {
+        String current = screenshot.getFileName().toString();
+        int dot = current.lastIndexOf('.');
+        String baseName = dot > 0 ? current.substring(0, dot) : current;
+        String extension = dot > 0 ? current.substring(dot) : "";
+
+        javafx.scene.control.TextField field = new javafx.scene.control.TextField(baseName);
+        field.setPrefWidth(320);
+
+        com.jfoenix.controls.JFXButton confirm = FXUtils.newRaisedButton("确定");
+        com.jfoenix.controls.JFXButton cancel = FXUtils.newRaisedButton("取消");
+
+        HBox buttons = new HBox(8, cancel, confirm);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox body = new VBox(10,
+                new Label("新的文件名（保留 " + extension + "）"),
+                field,
+                buttons);
+        body.setPadding(new Insets(4, 0, 0, 0));
+
+        com.jfoenix.controls.JFXDialogLayout layout = new com.jfoenix.controls.JFXDialogLayout();
+        layout.setHeading(new Label("重命名截图"));
+        layout.setBody(body);
+
+        confirm.setOnAction(event -> {
+            applyRename(screenshot, field.getText(), extension);
+            org.jackhuang.hmcl.ui.DialogUtils.close(layout);
+        });
+        cancel.setOnAction(event -> org.jackhuang.hmcl.ui.DialogUtils.close(layout));
+        field.setOnAction(event -> confirm.fire());
+
+        Controllers.dialog(layout);
+        javafx.application.Platform.runLater(field::requestFocus);
+    }
+
+    /// Performs the actual rename on disk.
+    ///
+    /// @param screenshot the original file
+    /// @param entered    the name typed by the user
+    /// @param extension  the original extension, re-appended so the viewer still recognises it
+    private void applyRename(Path screenshot, String entered, String extension) {
+        if (entered == null || entered.isBlank())
+            return;
+
+        String name = entered.strip();
+        // Drop a re-typed extension, then always append the original one.
+        if (!extension.isEmpty() && name.toLowerCase(Locale.ROOT).endsWith(extension.toLowerCase(Locale.ROOT)))
+            name = name.substring(0, name.length() - extension.length()).strip();
+        if (name.isEmpty())
+            return;
+
+        Path target = screenshot.resolveSibling(name + extension);
+        if (target.equals(screenshot))
+            return;
+
+        try {
+            if (Files.exists(target)) {
+                summary.setText("已存在同名文件：" + target.getFileName());
+                return;
+            }
+            Files.move(screenshot, target);
+            reload();
+        } catch (Throwable e) {
+            summary.setText("重命名失败：" + e);
+        }
+    }
+
+    /// Deletes a capture after confirmation.
+    ///
+    /// @param screenshot the image file
+    private void delete(Path screenshot) {
+        Controllers.confirm("确定删除这张截图吗？", screenshot.getFileName().toString(),
+                MessageDialogPane.MessageType.WARNING, () -> {
+                    try {
+                        Files.deleteIfExists(screenshot);
+                        reload();
+                    } catch (Throwable e) {
+                        summary.setText("删除失败：" + e);
+                    }
+                }, () -> {
+                });
     }
 
     /// Opens the folder holding this instance's screenshots.
@@ -292,6 +333,31 @@ final class ScreenshotPage extends VBox
         } catch (Throwable e) {
             summary.setText("无法打开目录：" + e);
         }
+    }
+
+    // ----------------------------------------------------------------- widgets
+
+    /// Builds a flat icon-and-label button without a trailing chevron.
+    ///
+    /// @param text   the label
+    /// @param icon   the icon
+    /// @param action the click action
+    /// @return the button
+    private static StackPane actionButton(String text, SVG icon, Runnable action) {
+        Label label = new Label(text);
+        label.getStyleClass().add("screenshot-button-text");
+
+        StackPane iconBox = new StackPane(icon.createIcon());
+        iconBox.setMouseTransparent(true);
+
+        HBox content = new HBox(6, iconBox, label);
+        content.setAlignment(Pos.CENTER);
+        content.setMouseTransparent(true);
+
+        StackPane button = new StackPane(content);
+        button.getStyleClass().add("screenshot-button");
+        button.setOnMouseClicked(event -> action.run());
+        return button;
     }
 
     /// Creates a flexible spacer.

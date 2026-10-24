@@ -1,17 +1,16 @@
-/* 截图管理插件样式
-   本插件是第三方独立作品，与 HMCL 官方无关。
-
-   页面主体使用启动器原生组件（ComponentList / LineButton），
-   这里只补充少量无法通过原生样式表达的细节，尽量贴近原生观感。 */
+﻿/* 截图管理插件样式
+   本插件是第三方独立作品，与 HMCL 官方无关。 */
 
 .screenshot-page {
     -fx-background-color: transparent;
 }
 
-.screenshot-title {
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -monet-on-surface;
+/* 工具行：与原生设置行一致的白底 */
+.screenshot-toolbar {
+    -fx-background-color: -monet-surface;
+    -fx-padding: 10 16 10 16;
+    -fx-border-color: transparent transparent -monet-outline-variant transparent;
+    -fx-border-width: 0 0 1 0;
 }
 
 .screenshot-summary {
@@ -20,17 +19,41 @@
 }
 
 .screenshot-hint {
-    -fx-font-size: 11.5px;
+    -fx-font-size: 12px;
     -fx-text-fill: -monet-on-surface-variant;
 }
 
-/* 最近一张截图的预览框 */
-.screenshot-preview {
+/* 单个截图的方框 */
+.screenshot-tile {
     -fx-background-color: -monet-surface-container-high;
     -fx-background-radius: 8px;
+    -fx-border-color: -monet-outline-variant;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-cursor: hand;
 }
 
-/* 页面唯一的滚动容器 */
+.screenshot-tile:hover {
+    -fx-border-color: -monet-primary;
+}
+
+/* 左下角的「⋮」按钮 */
+.screenshot-options {
+    -fx-background-color: rgba(0, 0, 0, 0.45);
+    -fx-background-radius: 10px;
+    -fx-padding: 2px 3px;
+    -fx-cursor: hand;
+}
+
+.screenshot-options:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.65);
+}
+
+.screenshot-options .svg-path {
+    -fx-fill: white;
+}
+
+/* 页面唯一滚动容器 */
 .screenshot-scroll {
     -fx-background-color: transparent;
     -fx-background: transparent;
@@ -40,8 +63,65 @@
     -fx-background-color: transparent;
 }
 
-/* 行内缩略图 */
-.screenshot-thumb {
+/* 预览弹窗 */
+.screenshot-preview-dialog {
+    -fx-background-color: -monet-surface;
+    -fx-padding: 12px;
+    -fx-background-radius: 10px;
+}
+
+.screenshot-preview-frame {
+    -fx-background-color: #10161F;
+    -fx-background-radius: 8px;
+}
+
+.screenshot-preview-caption {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.screenshot-preview-zoom {
+    -fx-font-size: 12px;
+    -fx-text-fill: -monet-on-surface-variant;
+}
+
+.screenshot-preview-hint {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -monet-on-surface-variant;
+}
+
+/* 工具按钮 */
+.screenshot-button {
+    -fx-background-color: -monet-surface-container-high;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px 12px;
+    -fx-cursor: hand;
+}
+
+.screenshot-button:hover {
     -fx-background-color: -monet-surface-container-highest;
-    -fx-background-radius: 4px;
+}
+
+.screenshot-button-text {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -monet-primary;
+}
+
+/* 实例页左侧列表：隐藏滚动条。
+   截图管理加入后条目变多会出现滚动条，这里按需求去掉它，
+   即使内容拥挤也不显示滚动条。 */
+.screenshot-no-scrollbar > .scroll-bar:vertical,
+.screenshot-no-scrollbar > .scroll-bar:horizontal {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-opacity: 0;
+}
+
+.screenshot-no-scrollbar > .scroll-bar:vertical > .thumb,
+.screenshot-no-scrollbar > .scroll-bar:horizontal > .thumb {
+    -fx-background-color: transparent;
+}
+
+.screenshot-no-scrollbar > .corner {
+    -fx-background-color: transparent;
 }

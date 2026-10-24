@@ -190,10 +190,30 @@ public final class ScreenshotPlugin extends HmclPlugin {
                 org.jackhuang.hmcl.ui.SVG.class);
         addMethod.invoke(sideBar, header, tab, "截图管理", org.jackhuang.hmcl.ui.SVG.SCREENSHOT_MONITOR);
 
+        hideSideBarScrollBar(sideBar);
+
         injectedPage = page;
         injectedHeader = header;
         injectedSideBar = sideBar;
         getContext().logInfo("已向实例管理添加「截图管理」标签页");
+    }
+
+    /// Hides the side bar's scroll bar so the added entry never introduces one.
+    ///
+    /// <p>`AdvancedListBox` is a `ScrollPane`, so one more row can make the launcher show a
+    /// vertical scroll bar. A style class suppresses it; the list still fits because the instance
+    /// page's side bar is sized to its content.</p>
+    ///
+    /// @param sideBar the side bar
+    private static void hideSideBarScrollBar(Object sideBar) {
+        if (sideBar instanceof javafx.scene.Node node) {
+            if (!node.getStyleClass().contains("screenshot-no-scrollbar"))
+                node.getStyleClass().add("screenshot-no-scrollbar");
+        }
+        if (sideBar instanceof javafx.scene.control.ScrollPane scroll) {
+            scroll.setVbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
+            scroll.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
+        }
     }
 
     /// Finds the instance page's side bar.
