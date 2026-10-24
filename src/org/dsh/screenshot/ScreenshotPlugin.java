@@ -160,7 +160,9 @@ public final class ScreenshotPlugin extends HmclPlugin {
         }
 
         ScreenshotPage page = new ScreenshotPage();
-        page.bind(readRepository(instancePage), readVersion(instancePage));
+        // Feed the current instance once; later switches are pushed by the launcher through the
+        // GameInstanceLoadable hook, which is how every built-in instance tab refreshes itself.
+        page.loadInstance(readRepository(instancePage), readVersion(instancePage));
 
         var tabClass = Class.forName("org.jackhuang.hmcl.ui.construct.TabControl$Tab");
         Object tab = tabClass.getConstructor(String.class).newInstance(TAB_ID);
@@ -172,6 +174,14 @@ public final class ScreenshotPlugin extends HmclPlugin {
             getContext().logWarning("未找到实例页侧边栏，标签页无法显示");
             return;
         }
+
+        // Both registrations are required, and they are independent:
+        //  - the tab must sit in the header's list, otherwise selecting it has no content to show;
+        //  - the side bar needs its own row, built by addNavigationDrawerTab, otherwise the user has
+        //    nothing to click. addNavigationDrawerTab creates only the row, never the tab itself.
+        @SuppressWarnings("unchecked")
+        var typedTabs = (javafx.collections.ObservableList<Object>) tabs;
+        typedTabs.add(tab);
 
         var addMethod = sideBar.getClass().getMethod("addNavigationDrawerTab",
                 Class.forName("org.jackhuang.hmcl.ui.construct.TabHeader"),

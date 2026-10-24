@@ -1,20 +1,36 @@
 /* 截图管理插件样式
-   本插件是第三方独立作品，与 HMCL 官方无关。 */
+   本插件是第三方独立作品，与 HMCL 官方无关。
+
+   页面主体使用启动器原生组件（ComponentList / LineButton），
+   这里只补充少量无法通过原生样式表达的细节，尽量贴近原生观感。 */
 
 .screenshot-page {
     -fx-background-color: transparent;
 }
 
-.screenshot-toolbar {
-    -fx-padding: 0 0 6 0;
+.screenshot-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -monet-on-surface;
 }
 
-.screenshot-status {
-    -fx-font-size: 12.5px;
-    -fx-text-fill: #7B8794;
+.screenshot-summary {
+    -fx-font-size: 12px;
+    -fx-text-fill: -monet-on-surface-variant;
 }
 
-/* 单一滚动容器：整个页面由它统一滚动 */
+.screenshot-hint {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -monet-on-surface-variant;
+}
+
+/* 最近一张截图的预览框 */
+.screenshot-preview {
+    -fx-background-color: -monet-surface-container-high;
+    -fx-background-radius: 8px;
+}
+
+/* 页面唯一的滚动容器 */
 .screenshot-scroll {
     -fx-background-color: transparent;
     -fx-background: transparent;
@@ -24,48 +40,8 @@
     -fx-background-color: transparent;
 }
 
-.screenshot-grid {
-    -fx-padding: 4 2 8 2;
-}
-
-/* 单张截图：缩略图 + 文件名 */
-.screenshot-tile {
-    -fx-padding: 6px;
-    -fx-background-radius: 7px;
-    -fx-border-radius: 7px;
-    -fx-border-width: 1px;
-    -fx-border-color: transparent;
-    -fx-cursor: hand;
-}
-
-.screenshot-tile:hover {
-    -fx-background-color: #F2F6FD;
-    -fx-border-color: #DCE6F5;
-}
-
+/* 行内缩略图 */
 .screenshot-thumb {
-    -fx-background-color: #0F1620;
-    -fx-background-radius: 5px;
-}
-
-.screenshot-caption {
-    -fx-font-size: 11.5px;
-    -fx-text-fill: #5A6675;
-}
-
-/* 工具按钮 */
-.screenshot-button {
-    -fx-background-color: #EDF3FC;
-    -fx-background-radius: 5px;
-    -fx-padding: 5px 12px;
-    -fx-cursor: hand;
-}
-
-.screenshot-button:hover {
-    -fx-background-color: #DCE8F9;
-}
-
-.screenshot-button-text {
-    -fx-font-size: 12.5px;
-    -fx-text-fill: #2F6FD0;
+    -fx-background-color: -monet-surface-container-highest;
+    -fx-background-radius: 4px;
 }
