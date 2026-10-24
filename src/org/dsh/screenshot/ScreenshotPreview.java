@@ -31,8 +31,12 @@ import java.nio.file.Path;
 final class ScreenshotPreview {
 
     /// Fixed frame size: it never changes, so zooming only affects the picture inside it.
+    /// Largest the picture may be drawn at zoom 1.
     private static final double MAX_FRAME_WIDTH = 640;
     private static final double MAX_FRAME_HEIGHT = 460;
+
+    /// Corner close button edge.
+    private static final double CLOSE_BUTTON_SIZE = 22;
 
     /// Zoom limits and step per wheel notch.
     private static final double MIN_ZOOM = 0.2;
@@ -167,9 +171,11 @@ final class ScreenshotPreview {
         StackPane button = new StackPane(icon);
         button.getStyleClass().add("screenshot-preview-close");
         button.setPickOnBounds(true);
-        // Without this the enclosing StackPane stretches the button over the whole frame, so its
-        // background and clickable area covered the picture instead of being a corner button.
-        button.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        // Fixed size: the enclosing StackPane would otherwise stretch the button across the whole
+        // frame, and relying on the pref size alone left it with no visible extent.
+        button.setMinSize(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE);
+        button.setPrefSize(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE);
+        button.setMaxSize(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE);
         button.setOnMouseClicked(event -> {
             if (closeLayout != null)
                 DialogUtils.close(closeLayout);

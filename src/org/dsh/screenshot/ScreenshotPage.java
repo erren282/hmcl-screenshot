@@ -41,6 +41,9 @@ final class ScreenshotPage extends VBox
     /// Tile edge length in pixels.
     private static final double TILE_SIZE = 168;
 
+    /// Corner button edge: a small, fixed hit area that stays out of the picture.
+    private static final double BUTTON_SIZE = 20;
+
     /// Three-dot glyph for the per-tile menu, drawn small so it stays out of the way.
     private static final String MORE_VERT_PATH =
             "M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"
@@ -174,9 +177,10 @@ final class ScreenshotPage extends VBox
         tile.setMinSize(TILE_SIZE, TILE_SIZE);
         tile.setMaxSize(TILE_SIZE, TILE_SIZE);
 
-        // Hidden until the pointer is over the tile: the button must never obscure the picture.
+        // Hidden until the pointer is over the tile, so the button never covers the picture.
+        // Only visibility is toggled: clearing `managed` removes the node from layout, and
+        // restoring visibility then leaves it without any laid-out size — which made it vanish.
         options.setVisible(false);
-        options.setManaged(false);
         tile.setOnMouseEntered(event -> options.setVisible(true));
         tile.setOnMouseExited(event -> options.setVisible(false));
         return tile;
@@ -198,9 +202,11 @@ final class ScreenshotPage extends VBox
         StackPane button = new StackPane(dots);
         button.getStyleClass().add("screenshot-options");
         button.setPickOnBounds(true);
-        // Without this the enclosing StackPane stretches the button over the whole tile, so its
-        // background and clickable area covered the picture instead of being a small corner dot.
-        button.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        // Fixed size: the enclosing StackPane would otherwise stretch the button across the whole
+        // tile, and relying on the pref size alone left it with no visible extent.
+        button.setMinSize(BUTTON_SIZE, BUTTON_SIZE);
+        button.setPrefSize(BUTTON_SIZE, BUTTON_SIZE);
+        button.setMaxSize(BUTTON_SIZE, BUTTON_SIZE);
 
         org.jackhuang.hmcl.ui.construct.PopupMenu menu = new org.jackhuang.hmcl.ui.construct.PopupMenu();
         com.jfoenix.controls.JFXPopup popup = new com.jfoenix.controls.JFXPopup(menu);
