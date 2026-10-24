@@ -55,6 +55,9 @@ public final class ScreenshotPlugin extends HmclPlugin {
     /// The tab header that received the injected tab.
     private Object injectedHeader;
 
+    /// The side bar that received the injected entry.
+    private Object injectedSideBar;
+
     /// Whether a poll for newly opened instance pages is running.
     private boolean watching;
 
@@ -134,7 +137,13 @@ public final class ScreenshotPlugin extends HmclPlugin {
         }
     }
 
-    /// Adds the tab to a tab header and binds it to the page's current instance.
+    /// Adds the tab to the instance page's side bar and binds it to the current instance.
+    ///
+    /// <p>The instance page does not render a horizontal tab strip: it builds an
+    /// `AdvancedListBox` side bar where each entry calls
+    /// `addNavigationDrawerTab(tabHeader, tab, title, icon)`. Registering the tab in the header
+    /// alone leaves it invisible, because nothing creates a side-bar row for it. Both steps are
+    /// therefore performed here.</p>
     ///
     /// @param instancePage the instance page
     /// @param header       its tab header
@@ -154,18 +163,66 @@ public final class ScreenshotPlugin extends HmclPlugin {
         page.bind(readRepository(instancePage), readVersion(instancePage));
 
         var tabClass = Class.forName("org.jackhuang.hmcl.ui.construct.TabControl$Tab");
-        var constructor = tabClass.getConstructor(String.class, String.class);
-        Object tab = constructor.newInstance(TAB_ID, "截图管理");
-
+        Object tab = tabClass.getConstructor(String.class).newInstance(TAB_ID);
+        tabClass.getMethod("setText", String.class).invoke(tab, "截图管理");
         tabClass.getMethod("setNode", Node.class).invoke(tab, page);
 
-        @SuppressWarnings("unchecked")
-        var typedTabs = (javafx.collections.ObservableList<Object>) tabs;
-        typedTabs.add(tab);
+        Object sideBar = findSideBar(instancePage);
+        if (sideBar == null) {
+            getContext().logWarning("未找到实例页侧边栏，标签页无法显示");
+            return;
+        }
+
+        var addMethod = sideBar.getClass().getMethod("addNavigationDrawerTab",
+                Class.forName("org.jackhuang.hmcl.ui.construct.TabHeader"),
+                tabClass,
+                String.class,
+                org.jackhuang.hmcl.ui.SVG.class);
+        addMethod.invoke(sideBar, header, tab, "截图管理", org.jackhuang.hmcl.ui.SVG.SCREENSHOT_MONITOR);
 
         injectedPage = page;
         injectedHeader = header;
+        injectedSideBar = sideBar;
         getContext().logInfo("已向实例管理添加「截图管理」标签页");
+    }
+
+    /// Finds the instance page's side bar.
+    ///
+    /// <p>Located by type inside the page's own subtree, so unrelated lists elsewhere in the
+    /// window are never touched.</p>
+    ///
+    /// @param instancePage the instance page
+    /// @return the side bar, or `null`
+    private static Object findSideBar(Node instancePage) {
+        for (Node node : allNodes(instancePage)) {
+            if (node instanceof org.jackhuang.hmcl.ui.construct.AdvancedListBox)
+                return node;
+        }
+        return null;
+    }
+
+    /// Returns a node and all its descendants.
+    ///
+    /// @param root the node
+    /// @return the flat list
+    private static java.util.List<Node> allNodes(Node root) {
+        java.util.List<Node> nodes = new java.util.ArrayList<>();
+        collectNodes(root, nodes);
+        return nodes;
+    }
+
+    /// Recursively collects nodes.
+    ///
+    /// @param node the node
+    /// @param into the target list
+    private static void collectNodes(Node node, java.util.List<Node> into) {
+        if (node == null)
+            return;
+        into.add(node);
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable())
+                collectNodes(child, into);
+        }
     }
 
     /// Removes the injected tab, if the header still holds it.
@@ -197,6 +254,7 @@ public final class ScreenshotPlugin extends HmclPlugin {
 
         injectedPage = null;
         injectedHeader = null;
+        injectedSideBar = null;
     }
 
     // ---------------------------------------------------------------- instance
