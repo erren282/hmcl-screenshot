@@ -34,10 +34,14 @@ final class ScreenshotLocator {
 
     /// Returns the directory that holds this instance's screenshots.
     ///
-    /// <p>Exactly one directory is used — the instance's own run directory — mirroring how the
-    /// game writes captures. Merging the shared `.minecraft/screenshots` folder into the same list
-    /// looked convenient but showed captures belonging to *other* versions, because that folder is
-    /// shared by every instance without isolation.</p>
+    /// <p>`getRunDirectory` already resolves where the game actually writes for this instance —
+    /// it honours the instance's `runningDirectory` override and the isolation setting. Asking it
+    /// is therefore more accurate than guessing from paths, and it avoids merging the shared
+    /// `.minecraft/screenshots` folder into isolated instances, which used to make every version
+    /// show the same captures.</p>
+    ///
+    /// <p>When the resolved directory is the shared one, it is used as-is: those captures really
+    /// are this instance's, since that is where the game put them.</p>
     ///
     /// @param repository the instance's repository
     /// @param version    the instance name
@@ -49,13 +53,32 @@ final class ScreenshotLocator {
 
         try {
             Path runDirectory = repository.getRunDirectory(version);
-            if (runDirectory != null)
-                addIfAbsent(candidates, runDirectory.resolve("screenshots"));
+            if (runDirectory != null) {
+                Path screenshots = runDirectory.resolve("screenshots");
+                addIfAbsent(candidates, screenshots);
+                return candidates;
+            }
         } catch (Throwable ignored) {
             // Nothing to show.
         }
 
         return candidates;
+    }
+
+    /// Describes where an instance's screenshots were looked for, for diagnostics.
+    ///
+    /// @param repository the instance's repository
+    /// @param version    the instance name
+    /// @return a human-readable description
+    static String describe(HMCLGameRepository repository, String version) {
+        if (repository == null || version == null)
+            return "（无实例）";
+        try {
+            Path runDirectory = repository.getRunDirectory(version);
+            return runDirectory == null ? "（无法解析运行目录）" : runDirectory.toString();
+        } catch (Throwable e) {
+            return "（解析失败：" + e + "）";
+        }
     }
 
     /// Collects image files from the given directories.
