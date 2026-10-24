@@ -151,10 +151,17 @@ final class ScreenshotPreview {
 
     /// Builds the close button for the preview.
     ///
+    /// <p>Sized with `SVGContainer`, the same helper the launcher uses for its icons — a bare
+    /// `SVGPath` keeps its 24-unit view box and renders far too large.</p>
+    ///
     /// @return the button
     private StackPane closeButton() {
-        StackPane button = new StackPane(SVG.CLOSE.createIcon());
+        org.jackhuang.hmcl.ui.SVGContainer icon =
+                new org.jackhuang.hmcl.ui.SVGContainer(SVG.CLOSE, 14);
+
+        StackPane button = new StackPane(icon);
         button.getStyleClass().add("screenshot-preview-close");
+        button.setPickOnBounds(true);
         button.setOnMouseClicked(event -> {
             if (closeLayout != null)
                 DialogUtils.close(closeLayout);

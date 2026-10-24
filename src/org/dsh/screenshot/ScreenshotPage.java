@@ -186,12 +186,10 @@ final class ScreenshotPage extends VBox
     /// @return the button
     private Node optionsButton(Path screenshot) {
         // A deliberately tiny glyph: it must be discoverable without covering the picture.
-        // Scaled down in code because SVGPath ignores the CSS scale properties.
-        javafx.scene.shape.SVGPath dots = new javafx.scene.shape.SVGPath();
-        dots.setContent(MORE_VERT_PATH);
-        dots.getStyleClass().add("screenshot-options-dots");
-        dots.setScaleX(0.42);
-        dots.setScaleY(0.42);
+        // Wrapped in SVGContainer, which is how the launcher sizes every icon; the raw SVGPath
+        // keeps its 24-unit view box and would otherwise render at full size.
+        org.jackhuang.hmcl.ui.SVGContainer dots =
+                new org.jackhuang.hmcl.ui.SVGContainer(SVG.MORE_VERT, 13);
 
         StackPane button = new StackPane(dots);
         button.getStyleClass().add("screenshot-options");

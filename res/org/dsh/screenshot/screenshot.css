@@ -39,18 +39,19 @@
 
 /* 左下角的「⋮」按钮：刻意做得极小，避免遮挡画面 */
 .screenshot-options {
-    -fx-background-color: rgba(0, 0, 0, 0.34);
-    -fx-background-radius: 6px;
-    -fx-padding: 1px 2px;
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-background-radius: 9px;
+    -fx-padding: 2px 5px;
     -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 6, 0.2, 0, 1);
 }
 
 .screenshot-options:hover {
-    -fx-background-color: rgba(0, 0, 0, 0.55);
+    -fx-background-color: rgba(255, 255, 255, 1);
 }
 
-.screenshot-options .svg-path {
-    -fx-fill: white;
+.screenshot-options .svg {
+    -fx-fill: #24303F;
 }
 
 /* 页面唯一滚动容器 */
@@ -94,7 +95,7 @@
     -fx-background-color: rgba(0, 0, 0, 0.70);
 }
 
-.screenshot-preview-close .svg-path {
+.screenshot-preview-close .svg {
     -fx-fill: white;
 }
 
