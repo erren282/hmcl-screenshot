@@ -156,26 +156,41 @@ final class ScreenshotPage extends VBox
         } catch (Throwable ignored) {
             // A broken image leaves an empty box rather than failing the page.
         }
-        view.setFitWidth(TILE_SIZE);
-        view.setFitHeight(TILE_SIZE);
         view.setPreserveRatio(true);
         view.setSmooth(true);
 
+        // The tile takes the picture's own aspect ratio: a square tile letterboxed a 16:9 capture,
+        // and the empty bands above and below read as a thick white border.
+        double naturalWidth = view.getImage() == null || view.getImage().getWidth() <= 0
+                ? TILE_SIZE
+                : view.getImage().getWidth();
+        double naturalHeight = view.getImage() == null || view.getImage().getHeight() <= 0
+                ? TILE_SIZE
+                : view.getImage().getHeight();
+
+        double scale = Math.min(TILE_SIZE / naturalWidth, TILE_SIZE / naturalHeight);
+        double tileWidth = Math.max(1, naturalWidth * scale);
+        double tileHeight = Math.max(1, naturalHeight * scale);
+
+        view.setFitWidth(tileWidth);
+        view.setFitHeight(tileHeight);
+
         StackPane frame = new StackPane(view);
         frame.getStyleClass().add("screenshot-tile");
-        frame.setPrefSize(TILE_SIZE, TILE_SIZE);
-        frame.setMinSize(TILE_SIZE, TILE_SIZE);
-        frame.setMaxSize(TILE_SIZE, TILE_SIZE);
+        frame.setPrefSize(tileWidth, tileHeight);
+        frame.setMinSize(tileWidth, tileHeight);
+        frame.setMaxSize(tileWidth, tileHeight);
         frame.setOnMouseClicked(event -> ScreenshotPreview.show(screenshot));
 
         Node options = optionsButton(screenshot);
         StackPane.setAlignment(options, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(options, new Insets(0, 5, 5, 0));
+        StackPane.setMargin(options, new Insets(0, 4, 4, 0));
 
+        // The wrapper is exactly the picture's size, so no background band can show through.
         StackPane tile = new StackPane(frame, options);
-        tile.setPrefSize(TILE_SIZE, TILE_SIZE);
-        tile.setMinSize(TILE_SIZE, TILE_SIZE);
-        tile.setMaxSize(TILE_SIZE, TILE_SIZE);
+        tile.setPrefSize(tileWidth, tileHeight);
+        tile.setMinSize(tileWidth, tileHeight);
+        tile.setMaxSize(tileWidth, tileHeight);
 
         // Hidden until the pointer is over the tile, so the button never covers the picture.
         // Only visibility is toggled: clearing `managed` removes the node from layout, and
@@ -371,6 +386,9 @@ final class ScreenshotPage extends VBox
 
     /// Builds a flat icon-and-label button without a trailing chevron.
     ///
+    /// <p>Wrapped in the launcher's `RipplerContainer`, so the click feedback is the same ripple
+    /// every other launcher button uses instead of no animation at all.</p>
+    ///
     /// @param text   the label
     /// @param icon   the icon
     /// @param action the click action
@@ -379,17 +397,24 @@ final class ScreenshotPage extends VBox
         Label label = new Label(text);
         label.getStyleClass().add("screenshot-button-text");
 
-        StackPane iconBox = new StackPane(icon.createIcon());
+        org.jackhuang.hmcl.ui.SVGContainer iconBox =
+                new org.jackhuang.hmcl.ui.SVGContainer(icon, 14);
         iconBox.setMouseTransparent(true);
 
         HBox content = new HBox(6, iconBox, label);
         content.setAlignment(Pos.CENTER);
         content.setMouseTransparent(true);
 
-        StackPane button = new StackPane(content);
-        button.getStyleClass().add("screenshot-button");
-        button.setOnMouseClicked(event -> action.run());
-        return button;
+        StackPane surface = new StackPane(content);
+        surface.getStyleClass().add("screenshot-button-surface");
+
+        // The ripple is the launcher's standard click feedback.
+        org.jackhuang.hmcl.ui.construct.RipplerContainer rippler =
+                new org.jackhuang.hmcl.ui.construct.RipplerContainer(surface);
+        rippler.getStyleClass().add("screenshot-button");
+
+        rippler.setOnMouseClicked(event -> action.run());
+        return rippler;
     }
 
     /// Creates a flexible spacer.
