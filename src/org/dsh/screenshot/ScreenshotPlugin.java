@@ -137,6 +137,54 @@ public final class ScreenshotPlugin extends HmclPlugin {
         }
     }
 
+    /// Keeps the tab bound to whichever instance the page currently shows.
+    ///
+    /// <p>The instance page holds the current instance in a private `instanceReference` property.
+    /// Observing it is the only way for an injected tab to learn about switches, since the
+    /// launcher's own `GameInstanceLoadable` dispatch happens when a tab's node is created — and
+    /// this node is created once and reused.</p>
+    ///
+    /// @param instancePage the instance page
+    /// @param page         the screenshot page to keep in sync
+    private void watchInstanceReference(Node instancePage, ScreenshotPage page) {
+        try {
+            Object reference = readField(instancePage, "instanceReference");
+            if (!(reference instanceof javafx.beans.property.ObjectProperty<?> property)) {
+                getContext().logWarning("无法监听实例切换：instanceReference 不可用");
+                return;
+            }
+
+            // Registered through the ObjectProperty interface with an explicit ChangeListener
+            // type, so the overload resolution cannot pick the InvalidationListener variant.
+            javafx.beans.value.ChangeListener<Object> listener = (observable, oldValue, newValue) ->
+                    applyInstance(page, newValue);
+            ((javafx.beans.property.ObjectProperty<Object>) property).addListener(listener);
+
+            getContext().logInfo("已监听实例切换");
+        } catch (Throwable e) {
+            getContext().logWarning("无法监听实例切换：" + e);
+        }
+    }
+
+    /// Binds the screenshot page to an `InstanceReference` value.
+    ///
+    /// @param page  the screenshot page
+    /// @param value the new reference, or `null`
+    private void applyInstance(ScreenshotPage page, Object value) {
+        if (value == null)
+            return;
+        try {
+            Object repository = value.getClass().getMethod("repository").invoke(value);
+            Object instanceId = value.getClass().getMethod("instanceId").invoke(value);
+            page.loadInstance(
+                    repository instanceof HMCLGameRepository repo ? repo : null,
+                    instanceId instanceof String id ? id : null);
+            getContext().logInfo("截图页已切换到实例：" + instanceId);
+        } catch (Throwable e) {
+            getContext().logWarning("切换实例后刷新截图失败：" + e);
+        }
+    }
+
     /// Adds the tab to the instance page's side bar and binds it to the current instance.
     ///
     /// <p>The instance page does not render a horizontal tab strip: it builds an
@@ -160,9 +208,13 @@ public final class ScreenshotPlugin extends HmclPlugin {
         }
 
         ScreenshotPage page = new ScreenshotPage();
-        // Feed the current instance once; later switches are pushed by the launcher through the
-        // GameInstanceLoadable hook, which is how every built-in instance tab refreshes itself.
         page.loadInstance(readRepository(instancePage), readVersion(instancePage));
+
+        // Follow later version switches. The launcher only invokes `loadInstance` through
+        // `loadVersionFor(...)`, i.e. when it builds a tab's node; a page created once and reused
+        // therefore kept showing the first instance. Watching `instanceReference` is what keeps
+        // this tab in sync.
+        watchInstanceReference(instancePage, page);
 
         var tabClass = Class.forName("org.jackhuang.hmcl.ui.construct.TabControl$Tab");
         Object tab = tabClass.getConstructor(String.class).newInstance(TAB_ID);
