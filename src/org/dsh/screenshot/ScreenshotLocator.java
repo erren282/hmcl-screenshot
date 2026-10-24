@@ -32,11 +32,16 @@ final class ScreenshotLocator {
     private ScreenshotLocator() {
     }
 
-    /// Returns the directories that may hold this instance's screenshots, most specific first.
+    /// Returns the directory that holds this instance's screenshots.
+    ///
+    /// <p>Exactly one directory is used — the instance's own run directory — mirroring how the
+    /// game writes captures. Merging the shared `.minecraft/screenshots` folder into the same list
+    /// looked convenient but showed captures belonging to *other* versions, because that folder is
+    /// shared by every instance without isolation.</p>
     ///
     /// @param repository the instance's repository
     /// @param version    the instance name
-    /// @return candidate directories, possibly empty
+    /// @return the screenshot directory, or an empty list when it cannot be resolved
     static List<Path> candidateDirectories(HMCLGameRepository repository, String version) {
         List<Path> candidates = new ArrayList<>();
         if (repository == null || version == null)
@@ -47,28 +52,15 @@ final class ScreenshotLocator {
             if (runDirectory != null)
                 addIfAbsent(candidates, runDirectory.resolve("screenshots"));
         } catch (Throwable ignored) {
-            // Fall through to the base directory.
-        }
-
-        try {
-            // The shared game directory also holds screenshots when isolation is disabled.
-            var location = repository.getGameDirectory().getPath();
-            if (location != null)
-                addIfAbsent(candidates, location.toPath().resolve("screenshots"));
-        } catch (Throwable ignored) {
-            // Nothing else to try.
+            // Nothing to show.
         }
 
         return candidates;
     }
 
-    /// Collects image files from the candidate directories.
+    /// Collects image files from the given directories.
     ///
-    /// <p>Directories are merged rather than stopping at the first hit: an instance with isolation
-    /// enabled keeps its captures locally, but older captures may still sit in the shared folder,
-    /// and both are relevant to the user.</p>
-    ///
-    /// @param directories the candidate directories
+    /// @param directories the directories to scan
     /// @return the image files, newest first
     static List<Path> collect(List<Path> directories) {
         List<Path> files = new ArrayList<>();
