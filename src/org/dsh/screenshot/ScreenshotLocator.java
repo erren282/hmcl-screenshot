@@ -39,8 +39,13 @@ final class ScreenshotLocator {
 
     /// Returns the directory that holds this instance's screenshots.
     ///
+    /// <p>Always `versions/<name>/screenshots`, regardless of whether the instance enables version
+    /// isolation. `getRunDirectory` is deliberately *not* used: for a non-isolated instance it
+    /// resolves to the shared `.minecraft` folder, which is what made several instances display the
+    /// same captures.</p>
+    ///
     /// <p>The directory is created when missing, matching PCL — an empty page that can still open
-    /// its folder is friendlier than one that reports the folder does not exist.</p>
+    /// its folder is friendlier than one reporting the folder does not exist.</p>
     ///
     /// @param repository the instance's repository
     /// @param version    the instance name
@@ -50,10 +55,10 @@ final class ScreenshotLocator {
             return null;
 
         try {
-            Path runDirectory = repository.getRunDirectory(version);
-            if (runDirectory == null)
+            Path instanceRoot = repository.getVersionRoot(version);
+            if (instanceRoot == null)
                 return null;
-            Path screenshots = runDirectory.resolve("screenshots");
+            Path screenshots = instanceRoot.resolve("screenshots");
             Files.createDirectories(screenshots);
             return screenshots;
         } catch (Throwable e) {
