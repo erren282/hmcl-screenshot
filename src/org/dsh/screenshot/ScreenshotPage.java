@@ -241,10 +241,8 @@ final class ScreenshotPage extends VBox
 
     /// Renames a capture, preserving its extension.
     ///
-    /// <p>Built from the launcher's own dialog pieces — `JFXDialogLayout` with a body and an
-    /// actions row of `FXUtils.newRaisedButton` buttons — so it looks like the launcher's other
-    /// prompts. `InputDialogPane` is not used because it cannot pre-fill the current name, and
-    /// renaming should start from the existing name.</p>
+    /// <p>Uses the launcher's own prompt — `Controllers.prompt`, the same dialog the instance
+    /// rename uses — so the styling and behaviour are identical instead of a hand-built form.</p>
     ///
     /// @param screenshot the image file
     private void rename(Path screenshot) {
@@ -253,40 +251,13 @@ final class ScreenshotPage extends VBox
         String baseName = dot > 0 ? current.substring(0, dot) : current;
         String extension = dot > 0 ? current.substring(dot) : "";
 
-        javafx.scene.control.TextField field = new javafx.scene.control.TextField(baseName);
-        field.setPrefWidth(320);
-
-        Label heading = new Label("重命名截图");
-        heading.getStyleClass().add("screenshot-dialog-heading");
-
-        Label hint = new Label("扩展名 " + extension + " 会保留");
-        hint.getStyleClass().add("screenshot-dialog-hint");
-
-        VBox body = new VBox(8, hint, field);
-
-        com.jfoenix.controls.JFXButton confirm = FXUtils.newRaisedButton("确定");
-        confirm.getStyleClass().add("dialog-accept");
-
-        com.jfoenix.controls.JFXButton cancel = FXUtils.newRaisedButton("取消");
-        cancel.getStyleClass().add("dialog-cancel");
-
-        com.jfoenix.controls.JFXDialogLayout layout = new com.jfoenix.controls.JFXDialogLayout();
-        layout.setHeading(heading);
-        layout.setBody(body);
-        layout.setActions(cancel, confirm);
-
-        confirm.setOnAction(event -> {
-            applyRename(screenshot, field.getText(), extension);
-            org.jackhuang.hmcl.ui.DialogUtils.close(layout);
-        });
-        cancel.setOnAction(event -> org.jackhuang.hmcl.ui.DialogUtils.close(layout));
-        field.setOnAction(event -> confirm.fire());
-
-        Controllers.dialog(layout);
-        javafx.application.Platform.runLater(() -> {
-            field.requestFocus();
-            field.selectAll();
-        });
+        Controllers.prompt("重命名截图", (value, handler) -> {
+            String error = applyRename(screenshot, value, extension);
+            if (error == null)
+                handler.resolve();
+            else
+                handler.reject(error);
+        }, baseName);
     }
 
     /// Performs the actual rename on disk.
@@ -294,30 +265,31 @@ final class ScreenshotPage extends VBox
     /// @param screenshot the original file
     /// @param entered    the name typed by the user
     /// @param extension  the original extension, re-appended so the viewer still recognises it
-    private void applyRename(Path screenshot, String entered, String extension) {
+    /// @return `null` on success, or a message to show in the prompt
+    private String applyRename(Path screenshot, String entered, String extension) {
         if (entered == null || entered.isBlank())
-            return;
+            return "文件名不能为空";
 
         String name = entered.strip();
         // Drop a re-typed extension, then always append the original one.
         if (!extension.isEmpty() && name.toLowerCase(Locale.ROOT).endsWith(extension.toLowerCase(Locale.ROOT)))
             name = name.substring(0, name.length() - extension.length()).strip();
         if (name.isEmpty())
-            return;
+            return "文件名不能为空";
 
         Path target = screenshot.resolveSibling(name + extension);
         if (target.equals(screenshot))
-            return;
+            return null; // Nothing to do, but not an error.
 
         try {
-            if (Files.exists(target)) {
-                summary.setText("已存在同名文件：" + target.getFileName());
-                return;
-            }
+            if (Files.exists(target))
+                return "已存在同名文件：" + target.getFileName();
+
             Files.move(screenshot, target);
             reload();
+            return null;
         } catch (Throwable e) {
-            summary.setText("重命名失败：" + e);
+            return "重命名失败：" + e.getMessage();
         }
     }
 

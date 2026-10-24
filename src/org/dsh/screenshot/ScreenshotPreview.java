@@ -31,8 +31,8 @@ import java.nio.file.Path;
 final class ScreenshotPreview {
 
     /// Fixed frame size: it never changes, so zooming only affects the picture inside it.
-    private static final double FRAME_WIDTH = 560;
-    private static final double FRAME_HEIGHT = 360;
+    private static final double MAX_FRAME_WIDTH = 640;
+    private static final double MAX_FRAME_HEIGHT = 460;
 
     /// Zoom limits and step per wheel notch.
     private static final double MIN_ZOOM = 0.2;
@@ -64,16 +64,25 @@ final class ScreenshotPreview {
         view.setPreserveRatio(true);
         view.setSmooth(true);
 
-        double naturalWidth = image.isError() || image.getWidth() <= 0 ? FRAME_WIDTH : image.getWidth();
-        double naturalHeight = image.isError() || image.getHeight() <= 0 ? FRAME_HEIGHT : image.getHeight();
+        double naturalWidth = image.isError() || image.getWidth() <= 0 ? MAX_FRAME_WIDTH : image.getWidth();
+        double naturalHeight = image.isError() || image.getHeight() <= 0 ? MAX_FRAME_HEIGHT : image.getHeight();
 
-        // Base size fits the picture inside the frame; zoom scales from there.
-        double fit = Math.min(FRAME_WIDTH / naturalWidth, FRAME_HEIGHT / naturalHeight);
-        baseWidth = naturalWidth * fit;
-        baseHeight = naturalHeight * fit;
+        // Fit inside the allowed box, then make the *frame* exactly the picture's size. A fixed
+        // frame left letterboxing around every non-matching aspect ratio, which showed up as a
+        // large dark border around the screenshot.
+        double fit = Math.min(MAX_FRAME_WIDTH / naturalWidth, MAX_FRAME_HEIGHT / naturalHeight);
+        fit = Math.min(fit, 1.0); // Never upscale a small screenshot on open.
+        baseWidth = Math.max(1, naturalWidth * fit);
+        baseHeight = Math.max(1, naturalHeight * fit);
+        frameWidth = baseWidth;
+        frameHeight = baseHeight;
 
         applyZoom(1.0);
     }
+
+    /// The frame's current size, which always matches the picture.
+    private double frameWidth;
+    private double frameHeight;
 
     /// Builds the whole dialog content, including the frame and footer.
     ///
@@ -82,12 +91,13 @@ final class ScreenshotPreview {
     private StackPane build(Path file) {
         StackPane frame = new StackPane(view);
         frame.getStyleClass().add("screenshot-preview-frame");
-        frame.setPrefSize(FRAME_WIDTH, FRAME_HEIGHT);
-        frame.setMinSize(FRAME_WIDTH, FRAME_HEIGHT);
-        frame.setMaxSize(FRAME_WIDTH, FRAME_HEIGHT);
+        frame.setPrefSize(frameWidth, frameHeight);
+        frame.setMinSize(frameWidth, frameHeight);
+        frame.setMaxSize(frameWidth, frameHeight);
 
         // Clip so a zoomed picture never spills outside the frame.
-        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(FRAME_WIDTH, FRAME_HEIGHT);
+        javafx.scene.shape.Rectangle clip =
+                new javafx.scene.shape.Rectangle(frameWidth, frameHeight);
         clip.setArcWidth(14);
         clip.setArcHeight(14);
         frame.setClip(clip);
