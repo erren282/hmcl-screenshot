@@ -167,6 +167,9 @@ final class ScreenshotPreview {
         StackPane button = new StackPane(icon);
         button.getStyleClass().add("screenshot-preview-close");
         button.setPickOnBounds(true);
+        // Without this the enclosing StackPane stretches the button over the whole frame, so its
+        // background and clickable area covered the picture instead of being a corner button.
+        button.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         button.setOnMouseClicked(event -> {
             if (closeLayout != null)
                 DialogUtils.close(closeLayout);

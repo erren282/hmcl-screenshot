@@ -198,6 +198,9 @@ final class ScreenshotPage extends VBox
         StackPane button = new StackPane(dots);
         button.getStyleClass().add("screenshot-options");
         button.setPickOnBounds(true);
+        // Without this the enclosing StackPane stretches the button over the whole tile, so its
+        // background and clickable area covered the picture instead of being a small corner dot.
+        button.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
         org.jackhuang.hmcl.ui.construct.PopupMenu menu = new org.jackhuang.hmcl.ui.construct.PopupMenu();
         com.jfoenix.controls.JFXPopup popup = new com.jfoenix.controls.JFXPopup(menu);
