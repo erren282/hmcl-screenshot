@@ -31,8 +31,8 @@ import java.nio.file.Path;
 final class ScreenshotPreview {
 
     /// Fixed frame size: it never changes, so zooming only affects the picture inside it.
-    private static final double FRAME_WIDTH = 680;
-    private static final double FRAME_HEIGHT = 440;
+    private static final double FRAME_WIDTH = 560;
+    private static final double FRAME_HEIGHT = 360;
 
     /// Zoom limits and step per wheel notch.
     private static final double MIN_ZOOM = 0.2;
@@ -112,34 +112,42 @@ final class ScreenshotPreview {
         HBox footer = new HBox(8, caption, spacer(), zoomLabel, hint);
         footer.setAlignment(Pos.CENTER_LEFT);
 
-        javafx.scene.layout.VBox body = new javafx.scene.layout.VBox(10, frame, footer);
-        body.setPadding(new Insets(2, 0, 0, 0));
-
-        // A real dialog layout gives the launcher's own chrome, including its close handling.
-        com.jfoenix.controls.JFXDialogLayout layout = new com.jfoenix.controls.JFXDialogLayout();
-        layout.getStyleClass().add("screenshot-preview-dialog");
-        layout.setBody(body);
-
-        StackPane close = closeButton(layout);
+        // The close button sits inside the card, pinned to its top-right corner, so it always
+        // lands on the dialog itself instead of drifting to the window's corner.
+        StackPane close = closeButton();
         StackPane.setAlignment(close, Pos.TOP_RIGHT);
-        StackPane.setMargin(close, new Insets(10, 12, 0, 0));
+        StackPane.setMargin(close, new Insets(8));
 
-        // The close button floats in the dialog's top-right corner, over the picture frame.
-        StackPane wrapper = new StackPane(layout, close);
-        wrapper.setPickOnBounds(false);
-        StackPane.setAlignment(layout, Pos.CENTER);
-        return wrapper;
+        StackPane frameHolder = new StackPane(frame, close);
+
+        javafx.scene.layout.VBox card = new javafx.scene.layout.VBox(10, frameHolder, footer);
+        card.getStyleClass().add("screenshot-preview-card");
+        card.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+
+        // A plain container is used rather than JFXDialogLayout: that layout stretches to fill the
+        // dialog area, which made the preview cover the whole window. This card keeps its natural
+        // size, so the launcher stays visible around it.
+        StackPane root = new StackPane(card);
+        root.getStyleClass().add("screenshot-preview-dialog");
+        root.setPadding(new Insets(0));
+        root.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+
+        closeLayout = root;
+        return root;
     }
 
-    /// Builds the close button shown in the dialog's top-right corner.
+    /// The container to close when the preview is dismissed.
+    private StackPane closeLayout;
+
+    /// Builds the close button for the preview.
     ///
-    /// @param layout the dialog layout to close
     /// @return the button
-    private StackPane closeButton(StackPane layout) {
+    private StackPane closeButton() {
         StackPane button = new StackPane(SVG.CLOSE.createIcon());
         button.getStyleClass().add("screenshot-preview-close");
         button.setOnMouseClicked(event -> {
-            DialogUtils.close(layout);
+            if (closeLayout != null)
+                DialogUtils.close(closeLayout);
             event.consume();
         });
         return button;

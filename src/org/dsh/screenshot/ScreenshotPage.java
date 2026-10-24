@@ -186,9 +186,12 @@ final class ScreenshotPage extends VBox
     /// @return the button
     private Node optionsButton(Path screenshot) {
         // A deliberately tiny glyph: it must be discoverable without covering the picture.
+        // Scaled down in code because SVGPath ignores the CSS scale properties.
         javafx.scene.shape.SVGPath dots = new javafx.scene.shape.SVGPath();
         dots.setContent(MORE_VERT_PATH);
         dots.getStyleClass().add("screenshot-options-dots");
+        dots.setScaleX(0.42);
+        dots.setScaleY(0.42);
 
         StackPane button = new StackPane(dots);
         button.getStyleClass().add("screenshot-options");

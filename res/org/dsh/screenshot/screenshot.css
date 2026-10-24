@@ -55,24 +55,48 @@
 
 /* 页面唯一滚动容器 */
 .screenshot-scroll {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+    -fx-background-color: -monet-surface;
+    -fx-background: -monet-surface;
 }
 
 .screenshot-scroll > .viewport {
-    -fx-background-color: transparent;
+    -fx-background-color: -monet-surface;
 }
 
-/* 预览弹窗 */
+/* 预览弹窗：卡片式，贴合内容尺寸，不铺满窗口 */
 .screenshot-preview-dialog {
+    -fx-background-color: transparent;
+    -fx-max-width: -fx-pref-width;
+    -fx-max-height: -fx-pref-height;
+}
+
+.screenshot-preview-card {
     -fx-background-color: -monet-surface;
+    -fx-background-radius: 12px;
     -fx-padding: 12px;
-    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 18, 0.2, 0, 6);
+    -fx-max-width: -fx-pref-width;
+    -fx-max-height: -fx-pref-height;
 }
 
 .screenshot-preview-frame {
     -fx-background-color: #10161F;
     -fx-background-radius: 8px;
+}
+
+.screenshot-preview-close {
+    -fx-background-color: rgba(0, 0, 0, 0.44);
+    -fx-background-radius: 12px;
+    -fx-padding: 4px;
+    -fx-cursor: hand;
+}
+
+.screenshot-preview-close:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.70);
+}
+
+.screenshot-preview-close .svg-path {
+    -fx-fill: white;
 }
 
 .screenshot-preview-caption {
@@ -87,75 +111,5 @@
 
 .screenshot-preview-hint {
     -fx-font-size: 11.5px;
-    -fx-text-fill: -monet-on-surface-variant;
-}
-
-/* 工具按钮 */
-.screenshot-button {
-    -fx-background-color: -monet-surface-container-high;
-    -fx-background-radius: 6px;
-    -fx-padding: 5px 12px;
-    -fx-cursor: hand;
-}
-
-.screenshot-button:hover {
-    -fx-background-color: -monet-surface-container-highest;
-}
-
-.screenshot-button-text {
-    -fx-font-size: 12.5px;
-    -fx-text-fill: -monet-primary;
-}
-
-/* 实例页左侧列表：隐藏滚动条。
-   截图管理加入后条目变多会出现滚动条，这里按需求去掉它，
-   即使内容拥挤也不显示滚动条。 */
-.screenshot-no-scrollbar > .scroll-bar:vertical,
-.screenshot-no-scrollbar > .scroll-bar:horizontal {
-    -fx-pref-width: 0;
-    -fx-pref-height: 0;
-    -fx-opacity: 0;
-}
-
-.screenshot-no-scrollbar > .scroll-bar:vertical > .thumb,
-.screenshot-no-scrollbar > .scroll-bar:horizontal > .thumb {
-    -fx-background-color: transparent;
-}
-
-.screenshot-no-scrollbar > .corner {
-    -fx-background-color: transparent;
-}
-/* 「⋮」图标本体：极小，仅够辨认 */
-.screenshot-options-dots {
-    -fx-fill: white;
-    -fx-scale-x: 0.34;
-    -fx-scale-y: 0.34;
-}
-
-/* 预览弹窗右上角关闭按钮 */
-.screenshot-preview-close {
-    -fx-background-color: rgba(0, 0, 0, 0.42);
-    -fx-background-radius: 13px;
-    -fx-padding: 5px;
-    -fx-cursor: hand;
-}
-
-.screenshot-preview-close:hover {
-    -fx-background-color: rgba(0, 0, 0, 0.66);
-}
-
-.screenshot-preview-close .svg-path {
-    -fx-fill: white;
-}
-
-/* 重命名对话框 */
-.screenshot-dialog-heading {
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -monet-on-surface;
-}
-
-.screenshot-dialog-hint {
-    -fx-font-size: 12px;
     -fx-text-fill: -monet-on-surface-variant;
 }
