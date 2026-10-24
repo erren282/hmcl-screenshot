@@ -37,16 +37,16 @@
     -fx-border-color: -monet-primary;
 }
 
-/* 左下角的「⋮」按钮 */
+/* 左下角的「⋮」按钮：刻意做得极小，避免遮挡画面 */
 .screenshot-options {
-    -fx-background-color: rgba(0, 0, 0, 0.45);
-    -fx-background-radius: 10px;
-    -fx-padding: 2px 3px;
+    -fx-background-color: rgba(0, 0, 0, 0.34);
+    -fx-background-radius: 6px;
+    -fx-padding: 1px 2px;
     -fx-cursor: hand;
 }
 
 .screenshot-options:hover {
-    -fx-background-color: rgba(0, 0, 0, 0.65);
+    -fx-background-color: rgba(0, 0, 0, 0.55);
 }
 
 .screenshot-options .svg-path {
@@ -124,4 +124,38 @@
 
 .screenshot-no-scrollbar > .corner {
     -fx-background-color: transparent;
+}
+/* 「⋮」图标本体：极小，仅够辨认 */
+.screenshot-options-dots {
+    -fx-fill: white;
+    -fx-scale-x: 0.34;
+    -fx-scale-y: 0.34;
+}
+
+/* 预览弹窗右上角关闭按钮 */
+.screenshot-preview-close {
+    -fx-background-color: rgba(0, 0, 0, 0.42);
+    -fx-background-radius: 13px;
+    -fx-padding: 5px;
+    -fx-cursor: hand;
+}
+
+.screenshot-preview-close:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.66);
+}
+
+.screenshot-preview-close .svg-path {
+    -fx-fill: white;
+}
+
+/* 重命名对话框 */
+.screenshot-dialog-heading {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.screenshot-dialog-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: -monet-on-surface-variant;
 }

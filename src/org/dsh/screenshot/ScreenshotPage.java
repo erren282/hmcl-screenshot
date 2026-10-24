@@ -8,9 +8,7 @@ package org.dsh.screenshot;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -42,6 +40,12 @@ final class ScreenshotPage extends VBox
 
     /// Tile edge length in pixels.
     private static final double TILE_SIZE = 168;
+
+    /// Three-dot glyph for the per-tile menu, drawn small so it stays out of the way.
+    private static final String MORE_VERT_PATH =
+            "M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"
+                    + "M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
+                    + "M12 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z";
 
     private final FlowPane grid = new FlowPane(12, 12);
     private final Label summary = new Label();
@@ -172,30 +176,40 @@ final class ScreenshotPage extends VBox
         return tile;
     }
 
-    /// Builds the "⋮" button and the menu it opens.
+    /// Builds the "⋮" button and the native popup menu it opens.
+    ///
+    /// <p>Uses the launcher's own `PopupMenu` + `IconedMenuItem` + `JFXPopup` — the same trio every
+    /// other menu in the launcher uses — so styling and behaviour match instead of looking like a
+    /// stock JavaFX context menu.</p>
     ///
     /// @param screenshot the image file
     /// @return the button
     private Node optionsButton(Path screenshot) {
-        StackPane button = new StackPane(SVG.MORE_VERT.createIcon());
+        // A deliberately tiny glyph: it must be discoverable without covering the picture.
+        javafx.scene.shape.SVGPath dots = new javafx.scene.shape.SVGPath();
+        dots.setContent(MORE_VERT_PATH);
+        dots.getStyleClass().add("screenshot-options-dots");
+
+        StackPane button = new StackPane(dots);
         button.getStyleClass().add("screenshot-options");
         button.setPickOnBounds(true);
 
-        ContextMenu menu = new ContextMenu();
+        org.jackhuang.hmcl.ui.construct.PopupMenu menu = new org.jackhuang.hmcl.ui.construct.PopupMenu();
+        com.jfoenix.controls.JFXPopup popup = new com.jfoenix.controls.JFXPopup(menu);
 
-        MenuItem open = new MenuItem("用图片管理器打开");
-        open.setOnAction(event -> openImage(screenshot));
-
-        MenuItem rename = new MenuItem("重命名");
-        rename.setOnAction(event -> rename(screenshot));
-
-        MenuItem delete = new MenuItem("删除");
-        delete.setOnAction(event -> delete(screenshot));
-
-        menu.getItems().addAll(open, rename, delete);
+        menu.getContent().setAll(
+                new org.jackhuang.hmcl.ui.construct.IconedMenuItem(SVG.SCREENSHOT_MONITOR,
+                        "用图片管理器打开", () -> openImage(screenshot), popup),
+                new org.jackhuang.hmcl.ui.construct.IconedMenuItem(SVG.FOLDER_OPEN,
+                        "在文件管理器中显示", () -> reveal(screenshot), popup),
+                new org.jackhuang.hmcl.ui.construct.IconedMenuItem(SVG.EDIT,
+                        "重命名", () -> rename(screenshot), popup),
+                new org.jackhuang.hmcl.ui.construct.IconedMenuItem(SVG.DELETE,
+                        "删除", () -> delete(screenshot), popup));
 
         button.setOnMouseClicked(event -> {
-            menu.show(button, event.getScreenX(), event.getScreenY());
+            popup.show(button, com.jfoenix.controls.JFXPopup.PopupVPosition.BOTTOM,
+                    com.jfoenix.controls.JFXPopup.PopupHPosition.LEFT);
             event.consume();
         });
         return button;
@@ -224,9 +238,10 @@ final class ScreenshotPage extends VBox
 
     /// Renames a capture, preserving its extension.
     ///
-    /// <p>A small dialog is built by hand instead of using `InputDialogPane`, because that class
-    /// cannot pre-fill the current name — and renaming should start from the existing name rather
-    /// than an empty box.</p>
+    /// <p>Built from the launcher's own dialog pieces — `JFXDialogLayout` with a body and an
+    /// actions row of `FXUtils.newRaisedButton` buttons — so it looks like the launcher's other
+    /// prompts. `InputDialogPane` is not used because it cannot pre-fill the current name, and
+    /// renaming should start from the existing name.</p>
     ///
     /// @param screenshot the image file
     private void rename(Path screenshot) {
@@ -238,21 +253,24 @@ final class ScreenshotPage extends VBox
         javafx.scene.control.TextField field = new javafx.scene.control.TextField(baseName);
         field.setPrefWidth(320);
 
+        Label heading = new Label("重命名截图");
+        heading.getStyleClass().add("screenshot-dialog-heading");
+
+        Label hint = new Label("扩展名 " + extension + " 会保留");
+        hint.getStyleClass().add("screenshot-dialog-hint");
+
+        VBox body = new VBox(8, hint, field);
+
         com.jfoenix.controls.JFXButton confirm = FXUtils.newRaisedButton("确定");
+        confirm.getStyleClass().add("dialog-accept");
+
         com.jfoenix.controls.JFXButton cancel = FXUtils.newRaisedButton("取消");
-
-        HBox buttons = new HBox(8, cancel, confirm);
-        buttons.setAlignment(Pos.CENTER_RIGHT);
-
-        VBox body = new VBox(10,
-                new Label("新的文件名（保留 " + extension + "）"),
-                field,
-                buttons);
-        body.setPadding(new Insets(4, 0, 0, 0));
+        cancel.getStyleClass().add("dialog-cancel");
 
         com.jfoenix.controls.JFXDialogLayout layout = new com.jfoenix.controls.JFXDialogLayout();
-        layout.setHeading(new Label("重命名截图"));
+        layout.setHeading(heading);
         layout.setBody(body);
+        layout.setActions(cancel, confirm);
 
         confirm.setOnAction(event -> {
             applyRename(screenshot, field.getText(), extension);
@@ -262,7 +280,10 @@ final class ScreenshotPage extends VBox
         field.setOnAction(event -> confirm.fire());
 
         Controllers.dialog(layout);
-        javafx.application.Platform.runLater(field::requestFocus);
+        javafx.application.Platform.runLater(() -> {
+            field.requestFocus();
+            field.selectAll();
+        });
     }
 
     /// Performs the actual rename on disk.
@@ -311,6 +332,31 @@ final class ScreenshotPage extends VBox
                     }
                 }, () -> {
                 });
+    }
+
+    /// Opens the containing folder with the file selected.
+    ///
+    /// <p>`FXUtils.openFolder` only opens a directory, so the platform's own "reveal" invocation is
+    /// used: Explorer's `/select,` on Windows, `open -R` on macOS, and the folder elsewhere.</p>
+    ///
+    /// @param screenshot the image file
+    private void reveal(Path screenshot) {
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        try {
+            if (os.contains("win")) {
+                new ProcessBuilder("explorer.exe", "/select," + screenshot.toAbsolutePath())
+                        .start();
+                return;
+            }
+            if (os.contains("mac")) {
+                new ProcessBuilder("open", "-R", screenshot.toAbsolutePath().toString()).start();
+                return;
+            }
+            // Linux file managers differ too much to target one; showing the folder is enough.
+            FXUtils.openFolder(screenshot.getParent());
+        } catch (Throwable e) {
+            summary.setText("无法定位文件：" + e);
+        }
     }
 
     /// Opens the folder holding this instance's screenshots.
