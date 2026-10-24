@@ -115,6 +115,9 @@ final class ScreenshotPage extends VBox
     // ---------------------------------------------------------------------- data
 
     /// Re-reads the screenshots from disk.
+    ///
+    /// <p>One directory per instance, created when missing, exactly like PCL: the game writes
+    /// captures into the directory it runs from, so that is the only place worth looking.</p>
     void reload() {
         screenshots.clear();
         grid.getChildren().clear();
@@ -124,8 +127,8 @@ final class ScreenshotPage extends VBox
             return;
         }
 
-        List<Path> directories = ScreenshotLocator.candidateDirectories(repository, version);
-        screenshots.addAll(ScreenshotLocator.collect(directories));
+        screenshotDirectory = ScreenshotLocator.screenshotDirectory(repository, version);
+        screenshots.addAll(ScreenshotLocator.list(screenshotDirectory));
 
         summary.setText(screenshots.isEmpty()
                 ? "「" + version + "」没有截图"
@@ -140,6 +143,9 @@ final class ScreenshotPage extends VBox
             grid.getChildren().add(empty);
         }
     }
+
+    /// The directory currently being shown, used by “打开截图目录”.
+    private Path screenshotDirectory;
 
     // --------------------------------------------------------------------- tiles
 
@@ -367,8 +373,8 @@ final class ScreenshotPage extends VBox
             return;
         }
 
-        List<Path> directories = ScreenshotLocator.candidateDirectories(repository, version);
-        Path target = ScreenshotLocator.preferredDirectory(directories);
+        // Re-resolve on demand so the folder exists even before the first capture.
+        Path target = ScreenshotLocator.screenshotDirectory(repository, version);
         if (target == null) {
             summary.setText("没有找到截图目录");
             return;
