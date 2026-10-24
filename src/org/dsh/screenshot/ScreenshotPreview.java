@@ -126,9 +126,14 @@ final class ScreenshotPreview {
         // lands on the dialog itself instead of drifting to the window's corner.
         StackPane close = closeButton();
         StackPane.setAlignment(close, Pos.TOP_RIGHT);
-        StackPane.setMargin(close, new Insets(8));
+        StackPane.setMargin(close, new Insets(6, 6, 0, 0));
 
         StackPane frameHolder = new StackPane(frame, close);
+
+        // Hidden until the pointer enters the picture, so it does not cover the screenshot.
+        close.setVisible(false);
+        frameHolder.setOnMouseEntered(event -> close.setVisible(true));
+        frameHolder.setOnMouseExited(event -> close.setVisible(false));
 
         javafx.scene.layout.VBox card = new javafx.scene.layout.VBox(10, frameHolder, footer);
         card.getStyleClass().add("screenshot-preview-card");
@@ -157,7 +162,7 @@ final class ScreenshotPreview {
     /// @return the button
     private StackPane closeButton() {
         org.jackhuang.hmcl.ui.SVGContainer icon =
-                new org.jackhuang.hmcl.ui.SVGContainer(SVG.CLOSE, 14);
+                new org.jackhuang.hmcl.ui.SVGContainer(SVG.CLOSE, 10);
 
         StackPane button = new StackPane(icon);
         button.getStyleClass().add("screenshot-preview-close");

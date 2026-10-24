@@ -39,11 +39,11 @@
 
 /* 左下角的「⋮」按钮：刻意做得极小，避免遮挡画面 */
 .screenshot-options {
-    -fx-background-color: rgba(255, 255, 255, 0.92);
-    -fx-background-radius: 9px;
-    -fx-padding: 2px 5px;
+    -fx-background-color: rgba(255, 255, 255, 0.90);
+    -fx-background-radius: 7px;
+    -fx-padding: 1px 3px;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 6, 0.2, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 4, 0.2, 0, 1);
 }
 
 .screenshot-options:hover {
@@ -85,18 +85,19 @@
 }
 
 .screenshot-preview-close {
-    -fx-background-color: rgba(0, 0, 0, 0.44);
-    -fx-background-radius: 12px;
-    -fx-padding: 4px;
+    -fx-background-color: rgba(255, 255, 255, 0.90);
+    -fx-background-radius: 8px;
+    -fx-padding: 2px;
     -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 4, 0.2, 0, 1);
 }
 
 .screenshot-preview-close:hover {
-    -fx-background-color: rgba(0, 0, 0, 0.70);
+    -fx-background-color: rgba(255, 255, 255, 1);
 }
 
 .screenshot-preview-close .svg {
-    -fx-fill: white;
+    -fx-fill: #24303F;
 }
 
 .screenshot-preview-caption {

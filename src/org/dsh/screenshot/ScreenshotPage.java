@@ -166,13 +166,19 @@ final class ScreenshotPage extends VBox
         frame.setOnMouseClicked(event -> ScreenshotPreview.show(screenshot));
 
         Node options = optionsButton(screenshot);
-        StackPane.setAlignment(options, Pos.BOTTOM_LEFT);
-        StackPane.setMargin(options, new Insets(0, 0, 7, 7));
+        StackPane.setAlignment(options, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(options, new Insets(0, 5, 5, 0));
 
         StackPane tile = new StackPane(frame, options);
         tile.setPrefSize(TILE_SIZE, TILE_SIZE);
         tile.setMinSize(TILE_SIZE, TILE_SIZE);
         tile.setMaxSize(TILE_SIZE, TILE_SIZE);
+
+        // Hidden until the pointer is over the tile: the button must never obscure the picture.
+        options.setVisible(false);
+        options.setManaged(false);
+        tile.setOnMouseEntered(event -> options.setVisible(true));
+        tile.setOnMouseExited(event -> options.setVisible(false));
         return tile;
     }
 
@@ -185,11 +191,9 @@ final class ScreenshotPage extends VBox
     /// @param screenshot the image file
     /// @return the button
     private Node optionsButton(Path screenshot) {
-        // A deliberately tiny glyph: it must be discoverable without covering the picture.
-        // Wrapped in SVGContainer, which is how the launcher sizes every icon; the raw SVGPath
-        // keeps its 24-unit view box and would otherwise render at full size.
+        // Small glyph, sized the way the launcher sizes its own icons.
         org.jackhuang.hmcl.ui.SVGContainer dots =
-                new org.jackhuang.hmcl.ui.SVGContainer(SVG.MORE_VERT, 13);
+                new org.jackhuang.hmcl.ui.SVGContainer(SVG.MORE_VERT, 10);
 
         StackPane button = new StackPane(dots);
         button.getStyleClass().add("screenshot-options");
