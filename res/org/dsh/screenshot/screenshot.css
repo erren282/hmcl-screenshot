@@ -34,11 +34,14 @@
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 8, 0.2, 0, 2);
 }
 
-/* 选中态：描边而不是蒙版，画面仍然看得清 */
+/* 选中态：用边框标出，但预留同样的边距，选中/取消时尺寸不跳动。
+   直接加 border 会让 tile 因额外的边框宽度而重排，整行缩略图跟着跳。 */
 .screenshot-tile-selected {
     -fx-border-color: -monet-primary;
     -fx-border-width: 3px;
     -fx-border-radius: 6px;
+    -fx-background-insets: 3px;
+    -fx-background-radius: 4px;
 }
 
 /* 有选中项时才出现的操作条 */

@@ -319,11 +319,12 @@ final class ScreenshotPage extends VBox
 
             // Hidden until the pointer is over the tile, so the button never covers the picture.
             options.setVisible(false);
-            wrapper.setOnMouseEntered(event -> {
-                options.setVisible(true);
-                loadImage();
-            });
+            wrapper.setOnMouseEntered(event -> options.setVisible(true));
             wrapper.setOnMouseExited(event -> options.setVisible(false));
+
+            // Decoded up front: deferring it to hover left the first paint showing empty boxes,
+            // which read as broken tiles until the pointer happened to cross each one.
+            loadImage();
 
             wrapper.setOnMouseClicked(event -> {
                 if (event.getButton() != MouseButton.PRIMARY)
@@ -341,10 +342,10 @@ final class ScreenshotPage extends VBox
             node = wrapper;
         }
 
-        /// Decodes the picture the first time the tile is hovered.
+        /// Decodes the picture and sizes the tile to its aspect ratio.
         ///
-        /// <p>Decoding every capture up front made a large folder stall the page for seconds; only
-        /// the tiles the user actually looks at pay that cost.</p>
+        /// <p>Called once, when the tile is built: decoding at display size keeps the cost small
+        /// even for large captures, but waiting for a hover made the grid look empty.</p>
         void loadImage() {
             if (loaded)
                 return;

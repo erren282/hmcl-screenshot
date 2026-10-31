@@ -80,6 +80,28 @@ final class ScreenshotPreview {
     private javafx.scene.shape.Rectangle clip;
     private StackPane root;
 
+    /// The navigation arrows, kept so their visibility can follow the current index.
+    private StackPane previousButton;
+    private StackPane nextButton;
+
+    /// The container the arrows live in, used to know whether the pointer is over the picture.
+    private StackPane frameHolder;
+
+    /// Whether the pointer is currently over the picture.
+    private boolean hovered;
+
+    /// Shows or hides the arrows to match the current picture.
+    ///
+    /// <p>Visibility depends on two things: the pointer being over the picture, and whether a
+    /// neighbour exists. Recomputing it only on hover left the arrow pointing at nothing after
+    /// stepping to the first or last picture, because the mouse had not moved.</p>
+    private void updateNavVisibility() {
+        if (previousButton != null)
+            previousButton.setVisible(hovered && hasPrevious());
+        if (nextButton != null)
+            nextButton.setVisible(hovered && hasNext());
+    }
+
     /// Builds the preview for one picture of a set.
     ///
     /// @param files the whole set, newest first
@@ -136,24 +158,26 @@ final class ScreenshotPreview {
         StackPane.setMargin(previous, new Insets(0, 0, 0, 8));
         StackPane.setMargin(next, new Insets(0, 8, 0, 0));
 
+        previousButton = previous;
+        nextButton = next;
+
         StackPane close = closeButton();
         StackPane.setAlignment(close, Pos.TOP_RIGHT);
         StackPane.setMargin(close, new Insets(6, 6, 0, 0));
 
         StackPane frameHolder = new StackPane(frame, previous, next, close);
+        this.frameHolder = frameHolder;
 
         close.setVisible(false);
-        previous.setVisible(false);
-        next.setVisible(false);
         frameHolder.setOnMouseEntered(event -> {
+            hovered = true;
             close.setVisible(true);
-            previous.setVisible(hasPrevious());
-            next.setVisible(hasNext());
+            updateNavVisibility();
         });
         frameHolder.setOnMouseExited(event -> {
+            hovered = false;
             close.setVisible(false);
-            previous.setVisible(false);
-            next.setVisible(false);
+            updateNavVisibility();
         });
 
         javafx.scene.layout.VBox card = new javafx.scene.layout.VBox(10, frameHolder, footer);
@@ -221,6 +245,9 @@ final class ScreenshotPreview {
 
         caption.setText(file.getFileName().toString());
         position.setText(files.size() > 1 ? (index + 1) + " / " + files.size() : "");
+
+        // The picture changed, so which arrows make sense changed too.
+        updateNavVisibility();
 
         // The remembered zoom is applied relative to the new picture's fitted size.
         applyZoom(rememberedZoom);
