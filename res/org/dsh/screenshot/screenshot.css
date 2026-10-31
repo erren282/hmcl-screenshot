@@ -34,14 +34,15 @@
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 8, 0.2, 0, 2);
 }
 
-/* 选中态：用边框标出，但预留同样的边距，选中/取消时尺寸不跳动。
-   直接加 border 会让 tile 因额外的边框宽度而重排，整行缩略图跟着跳。 */
-.screenshot-tile-selected {
+/* 选中态：绘制在图片之上的描边层。
+   之前把边框加在 tile 本身，但 ImageView 会铺满整个 tile，边框被图片盖住看不见，
+   所以改成独立的覆盖层，不参与布局、也不影响尺寸。 */
+.screenshot-tile-selection {
     -fx-border-color: -monet-primary;
     -fx-border-width: 3px;
     -fx-border-radius: 6px;
-    -fx-background-insets: 3px;
-    -fx-background-radius: 4px;
+    -fx-background-color: -monet-primary-transparent-50;
+    -fx-background-radius: 6px;
 }
 
 /* 有选中项时才出现的操作条 */

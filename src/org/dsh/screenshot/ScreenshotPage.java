@@ -294,6 +294,9 @@ final class ScreenshotPage extends VBox
 
         final StackPane frame;
 
+        /// Outline drawn over the picture while this tile is selected.
+        final Region selectionOverlay;
+
         Tile(Path path, int index) {
             this.path = path;
             this.index = index;
@@ -312,7 +315,15 @@ final class ScreenshotPage extends VBox
             StackPane.setAlignment(options, Pos.BOTTOM_RIGHT);
             StackPane.setMargin(options, new Insets(0, 4, 4, 0));
 
-            StackPane wrapper = new StackPane(frame, options);
+            // Selection is drawn as a separate overlay on top of the picture rather than as a
+            // border on the frame: the ImageView fills the frame completely, so a border on it was
+            // painted underneath the picture and never showed.
+            selectionOverlay = new Region();
+            selectionOverlay.getStyleClass().add("screenshot-tile-selection");
+            selectionOverlay.setMouseTransparent(true);
+            selectionOverlay.setVisible(false);
+
+            StackPane wrapper = new StackPane(frame, selectionOverlay, options);
             wrapper.setPrefSize(TILE_SIZE, TILE_SIZE);
             wrapper.setMinSize(TILE_SIZE, TILE_SIZE);
             wrapper.setMaxSize(TILE_SIZE, TILE_SIZE);
@@ -382,12 +393,7 @@ final class ScreenshotPage extends VBox
         ///
         /// @param selected whether this tile is selected
         void setSelected(boolean selected) {
-            if (selected) {
-                if (!frame.getStyleClass().contains("screenshot-tile-selected"))
-                    frame.getStyleClass().add("screenshot-tile-selected");
-            } else {
-                frame.getStyleClass().remove("screenshot-tile-selected");
-            }
+            selectionOverlay.setVisible(selected);
         }
     }
 
